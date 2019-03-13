@@ -1,0 +1,72 @@
+# Structure of the table
+create table employee_details(
+employee_id int,
+month_year date,
+salary float,
+city varchar2(250)
+)
+
+#Input data format
+insert into employee_details1 values(1,to_date('01-2019','MM-YYYY'),9800,'Bangalore');
+
+#Approach
+Step#1: Since we have to find the fifth highest salary for every year based on city and the format of year is given as MONTH_YEAR.
+So, initially we will split column MONTH_YEAR as MONTH and YEAR.
+
+This can be achieved by using subquery:
+
+SELECT employee_id, 
+      salary, 
+      substr(month_year, 4, 3) AS Month1,
+      substr(month_year, 8, 4) AS Year1, 
+      city 
+      FROM employee_details1
+)P
+
+Step#2: Now we have to find the yearly salary of each employee group by city. The above query can be modified as below to get the
+salary of each employee on yearly basis.
+
+SELECT P.employee_id,
+     sum(P.salary) as ctc, 
+     P.Year1,
+     P.city 
+     FROM (SELECT employee_id, 
+                  salary, 
+                  substr(month_year, 4, 3) AS Month1,
+                  substr(month_year, 8, 4) AS Year1, 
+                  city 
+                  FROM employee_details1
+            )P
+GROUP BY P.Year1, P.employee_id, P.city
+
+
+Step#3: Now to find the fifth highest salary, we can use the DENSE_RANK() function to rank each row based on salary. 
+And to find the fifth higest salary we can filter by passing D_RANK() as 5. If you need 3rd highest salary we can filter 
+by passing D_RANK() as 3
+
+So, below is the full code to find the fifth highest yearly paid employee from every city:
+
+SELECT * FROM 
+(SELECT employee_id,
+        city,
+        ctc,
+        year1, 
+        DENSE_RANK() OVER (PARTITION BY city ORDER BY ctc DESC) AS D_RANK 
+        FROM (SELECT P.employee_id,
+                     sum(P.salary) as ctc, 
+                     P.Year1,
+                     P.city 
+                     FROM (SELECT employee_id, 
+                                  salary, 
+                                  substr(month_year, 4, 3) AS Month1,
+                                  substr(month_year, 8, 4) AS Year1, 
+                                  city 
+                                  FROM employee_details1
+                            )P
+                GROUP BY P.Year1, P.employee_id, P.city
+                )Q
+) WHERE D_RANK=5	
+
+
+
+
